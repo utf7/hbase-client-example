@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * @author chenyechao
@@ -36,11 +35,10 @@ public class HBaseDemo {
     private static final TableName TEST_TABLE = TableName.valueOf("test");
     private static final byte[] CF = Bytes.toBytes("cf");
 
-    private static CountDownLatch countDownLatch =new CountDownLatch(1);
 
     public static void main(String[] args) {
         try (Connection connection = HbaseConnectionFactory.getConnection()) {
-//            execDdl(connection);
+            execDdl(connection);
             execDml(connection);
         } catch (IOException e) {
             LOG.error("exec hbase client example error ", e);
@@ -56,21 +54,14 @@ public class HBaseDemo {
         ddlDemo.listTables();
         ddlDemo.readRegionLocators();
         LOG.info("finish run ddl client example");
-        countDownLatch.countDown();
     }
 
     public static void execDml(Connection connection) throws IOException {
-        try {
-            countDownLatch.await();
-            HBaseDmlDemo dmlDemo = new HBaseDmlDemo(connection, TEST_TABLE, CF);
-//            dmlDemo.put();
-//            dmlDemo.batchPuts();
-            dmlDemo.get();
-//            dmlDemo.scan();
-        }catch (InterruptedException e){
-            Thread.currentThread().interrupt();
-        }
-
+        HBaseDmlDemo dmlDemo = new HBaseDmlDemo(connection, TEST_TABLE, CF);
+        dmlDemo.put();
+        dmlDemo.batchPuts();
+        dmlDemo.get();
+        dmlDemo.scan();
     }
 
 
