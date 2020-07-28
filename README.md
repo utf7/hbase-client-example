@@ -18,8 +18,11 @@ dml: put,batch put,delete,increment,scan,get
 
 ## Building HBase Client Example
 
-
-​    ./mvn clean package
+```shell
+git clone https://github.com/utf7/hbase-client-example.git
+cd hbase-client-example
+mvn clean package
+```
 
 ##  Running the Test
 
@@ -49,7 +52,6 @@ a simple hbase-site.xml client config like
 
 ####  Run jar
 
-Run `jar`   
 
 if your  `hbase-site.xml`  in the folder `/home/conf/`  
 
