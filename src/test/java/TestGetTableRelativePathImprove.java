@@ -29,6 +29,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 public class TestGetTableRelativePathImprove {
 
     private final static int CELLS = 1000 * 10000;
+    private final static String TEST_TABLE_NAME = "default:TestTable";
 
 
     private Path getTableRelativePath(byte[] tableNameBytes) {
@@ -53,9 +54,10 @@ public class TestGetTableRelativePathImprove {
         /**
          * count means nothing just make the loop do something
          */
-        byte[] tableNameBytes = Bytes.toBytes("default:TestTable");
         int count = 0;
         for (int i = 0; i < CELLS; i++) {
+            byte[] tableNameBytes = Bytes.toBytes("default:TestTable");
+            String tableName = Bytes.toString(tableNameBytes);
             count++;
             getTableRelativePath(tableNameBytes);
         }
@@ -69,7 +71,7 @@ public class TestGetTableRelativePathImprove {
      */
     public long after() {
         long start = System.nanoTime();
-        byte[] tableNameBytes = Bytes.toBytes("default:TestTable");
+        byte[] tableNameBytes = Bytes.toBytes(TEST_TABLE_NAME);
         int count = 0;
         /**
          * count means nothing just make the loop do something
