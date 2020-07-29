@@ -40,7 +40,7 @@ import java.util.List;
  * <p>
  * DDL is : create table,disable table,drop table,alter table,list table,get region location,compact,split
  *
- * @author chenyechao
+ * @author Yechao Chen
  */
 public class HBaseDdlDemo {
 

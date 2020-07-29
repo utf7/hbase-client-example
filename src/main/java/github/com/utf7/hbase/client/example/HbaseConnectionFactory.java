@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 /**
- * @author chenyechao
+ * @author Yechao Chen
  */
 public class HbaseConnectionFactory {
     private static Logger LOG = LoggerFactory.getLogger(HBaseDemo.class);

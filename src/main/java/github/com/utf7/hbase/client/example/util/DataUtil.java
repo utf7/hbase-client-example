@@ -24,7 +24,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import java.util.Random;
 
 /**
- * @author chenyechao
+ * @author Yechao Chen
  */
 public class DataUtil {
 

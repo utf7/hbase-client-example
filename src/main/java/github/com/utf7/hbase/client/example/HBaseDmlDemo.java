@@ -49,7 +49,7 @@ import java.util.UUID;
  * <p>
  * dml is : put,batch put ,get,scan ,delete,increment
  *
- * @author chenyechao
+ * @author Yechao Chen
  */
 public class HBaseDmlDemo {
 
