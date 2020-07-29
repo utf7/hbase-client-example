@@ -21,7 +21,10 @@ import org.apache.hadoop.hbase.util.Bytes;
 
 
 /**
+ *
  * This is test for HFileOutputFormat2 improve case
+ * SEE  https://issues.apache.org/jira/browse/HBASE-24791
+ *  @author Yechao Chen
  */
 public class TestGetTableRelativePathImprove {
 
@@ -97,7 +100,7 @@ public class TestGetTableRelativePathImprove {
         System.out.println(afterCostInfo.toString());
         System.out.println("before all cost: " + beforeCostSumCount / (1000 * 1000D) +" ms");
         System.out.println("after all cost : " + afterCostSumCount / (1000 * 1000D) +" ms");
-        System.out.println("before vs after: " + beforeCostSumCount / (afterCostSumCount * 1.0D));
+        System.out.println("before vs after: " + beforeCostSumCount / (afterCostSumCount * 1.0D)+" : 1");
 
 
     }
