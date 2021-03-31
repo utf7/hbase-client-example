@@ -56,7 +56,7 @@ a simple hbase-site.xml client config like
 if your  `hbase-site.xml`  in the folder `/home/conf/`  
 
 ```shell script
-java -cp /home/conf/:hbase-client-example-1.0 HBaseDemo 100 
+java -cp /home/conf/:hbase-client-example-1.0 github.com.utf7.hbase.client.example.HBaseDemo 100 
 ```
 
 `100` means write `100` rows data to hbase

@@ -35,19 +35,12 @@ public class HbaseConnectionFactory {
 
     private final static Object LOCK = new Object();
     private static volatile Connection conn;
-    private final static String ZK_QUORUM = "zk1,zk2,zk3";
-    private final static String ZK_ZNODE_PRAENT = "/hbase";
-    private final static int ZK_CLIENT_PORT = HConstants.DEFAULT_ZOOKEEPER_CLIENT_PORT;
 
     public static Connection getConnection() throws IOException {
         if (conn == null) {
             synchronized (LOCK) {
                 if (conn == null) {
                     Configuration hbaseConf = HBaseConfiguration.create();
-                    hbaseConf.set(HConstants.ZOOKEEPER_QUORUM, ZK_QUORUM);
-                    hbaseConf.set(HConstants.ZOOKEEPER_ZNODE_PARENT, ZK_ZNODE_PRAENT);
-                    hbaseConf.setInt(HConstants.ZOOKEEPER_CLIENT_PORT, ZK_CLIENT_PORT);
-
                     // for fast test
                     hbaseConf.set("hbase.client.retries.number", "5");
 

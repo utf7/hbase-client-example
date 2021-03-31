@@ -21,6 +21,7 @@ import github.com.utf7.hbase.client.example.util.DataUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellScanner;
 import org.apache.hadoop.hbase.HRegionLocation;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
@@ -175,8 +176,9 @@ public class HBaseDmlDemo {
             for (int i = 0; i < getTimes; i++) {
                 Get get = new Get(DataUtil.generateRowkey(0, SPLITS + 1, RandomUtils.nextInt(0, ROWS)));
                 Result result = table.get(get);
+                CellScanner cellScanner = result.cellScanner();
                 StringBuilder rowsInfos = new StringBuilder();
-                while (result.advance()) {
+                while (!result.isEmpty() && cellScanner.advance()){
                     Cell currentCell = result.current();
                     rowsInfos.append(DataUtil.convert2PirntString(currentCell));
                 }
