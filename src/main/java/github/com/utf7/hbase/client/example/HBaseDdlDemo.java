@@ -18,14 +18,14 @@
 package github.com.utf7.hbase.client.example;
 
 
+import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HRegionLocation;
+import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
 import org.apache.hadoop.hbase.client.Connection;
 
 import org.apache.hadoop.hbase.client.RegionLocator;
 
-import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
@@ -71,23 +71,23 @@ public class HBaseDdlDemo {
     public void createTableWithSplit() throws IOException {
         LOG.info("start create table {} ", tableName.getNameAsString());
         long start = System.currentTimeMillis();
-        TableDescriptorBuilder tableDescriptorBuilder = TableDescriptorBuilder.newBuilder(tableName);
+        HTableDescriptor hTableDescriptor = new HTableDescriptor(tableName);
         byte[][] splitKeys = new byte[SPLITS][];
         for (int i = 1; i <= SPLITS; i++) {
             splitKeys[i - 1] = Bytes.toBytes(i);
         }
 
-        ColumnFamilyDescriptorBuilder columnFamilyDescriptorBuilder =
-                ColumnFamilyDescriptorBuilder.newBuilder(columnFamily);
+        HColumnDescriptor hColumnDescriptor =
+                new HColumnDescriptor(columnFamily);
         //also you can set some config for this table/cf like that
-        columnFamilyDescriptorBuilder.setBlockCacheEnabled(true);
-        columnFamilyDescriptorBuilder.setCompressionType(Compression.Algorithm.ZSTD);
+        hColumnDescriptor.setBlockCacheEnabled(true);
+        hColumnDescriptor.setCompressionType(Compression.Algorithm.ZSTD);
         short dfsReplication = 3;
-        columnFamilyDescriptorBuilder.setDFSReplication(dfsReplication);
-        columnFamilyDescriptorBuilder.setConfiguration("hbase.hstore.blockingStoreFiles", "30");
-        tableDescriptorBuilder.setColumnFamily(columnFamilyDescriptorBuilder.build());
+        hColumnDescriptor.setDFSReplication(dfsReplication);
+        hColumnDescriptor.setConfiguration("hbase.hstore.blockingStoreFiles", "30");
+        hTableDescriptor.addFamily(hColumnDescriptor);
 
-        connection.getAdmin().createTable(tableDescriptorBuilder.build(), splitKeys);
+        connection.getAdmin().createTable(hTableDescriptor, splitKeys);
         LOG.info("success create table  {} and cost {} ms", tableName.getNameAsString(),
                 (System.currentTimeMillis() - start));
 
