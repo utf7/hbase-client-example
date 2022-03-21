@@ -61,7 +61,7 @@ java -cp /home/conf/:hbase-client-example-1.0 github.com.utf7.hbase.client.examp
 
 `100` means write `100` rows data to hbase
 
-#### Run Tool
+#### Region Tool
 
 **merge region**
 ```shell script
