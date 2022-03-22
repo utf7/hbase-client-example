@@ -61,7 +61,7 @@ java -cp /home/conf/:hbase-client-example-1.0 github.com.utf7.hbase.client.examp
 
 `100` means write `100` rows data to hbase
 
-#### Run Tool
+#### Region Tool
 
 **merge region**
 ```shell script
@@ -70,9 +70,11 @@ java -cp /home/conf/:hbase-client-example-1.0 github.com.utf7.hbase.client.examp
 
 #### RegionName 
 
-Bytes.toString(hRegionInfo.getRegionName()) : hb_test,,1647862081929.adfbdd6411c6015c2b93ec0189f7ec8d.
+```shell  script
+Bytes.toString(regionInfo.getRegionName()) : hb_test,,1647862081929.adfbdd6411c6015c2b93ec0189f7ec8d.
 getRegionNameAsString : hb_test,,1647862081929.adfbdd6411c6015c2b93ec0189f7ec8d.
-Bytes.toString(hRegionInfo.getEncodedNameAsBytes()):   adfbdd6411c6015c2b93ec0189f7ec8d
+Bytes.toString(regionInfo.getEncodedNameAsBytes()):   adfbdd6411c6015c2b93ec0189f7ec8d
 getEncodedName : adfbdd6411c6015c2b93ec0189f7ec8d
 getRegionId : 1647862081929
+```
 
