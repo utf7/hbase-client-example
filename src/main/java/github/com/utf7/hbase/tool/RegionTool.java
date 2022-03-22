@@ -62,14 +62,22 @@ public class RegionTool {
         if (regionLoadMap.get(first.getRegionName()).getStorefileSizeMB() < sizeMb
             && regionLoadMap.get(second.getRegionName()).getStorefileSizeMB() < sizeMb) {
           if (HRegionInfo.areAdjacent(first, second)) {
-            LOG.info("merge region : {}:{}Mb with {}:{}Mb ", first.getRegionNameAsString(),
-                getRegionSize(regionLoadMap, first), second.getRegionNameAsString(),
-                getRegionSize(regionLoadMap, second));
+            long firstRegionSizeMb = getRegionSizeMb(regionLoadMap, first);
+            long secondRegionSizeMb = getRegionSizeMb(regionLoadMap, second);
+            long afterMergeRegionSzieMb = firstRegionSizeMb + secondRegionSizeMb;
+            LOG.info("starting merge region : {}:{}Mb with {}:{}Mb  after {} Mb", first.getRegionNameAsString(),
+                firstRegionSizeMb, second.getRegionNameAsString(), secondRegionSizeMb,afterMergeRegionSzieMb);
+
             try {
               admin.mergeRegions(first.getEncodedNameAsBytes(), second.getEncodedNameAsBytes(),
                   false);
+              LOG.info("finish merge region : {}:{}Mb with {}:{}Mb  after {} Mb", first.getRegionNameAsString(),
+                  firstRegionSizeMb, second.getRegionNameAsString(), secondRegionSizeMb,afterMergeRegionSzieMb);
+
               successMergeCount++;
             } catch (Exception e) {
+              LOG.error("merge region failed {},{} error:", first.getRegionNameAsString(),
+                  second.getRegionNameAsString(), e);
               failedMergeCount++;
             }
           }
@@ -91,7 +99,12 @@ public class RegionTool {
     return regionLoads;
   }
 
-  private static long getRegionSize(Map<byte[], RegionLoad> regionLoadMap, HRegionInfo hri) {
+  /**
+   * @param regionLoadMap
+   * @param hri
+   * @return region size with MB
+   */
+  private static long getRegionSizeMb(Map<byte[], RegionLoad> regionLoadMap, HRegionInfo hri) {
     RegionLoad regionLoad = regionLoadMap.get(hri.getRegionName());
     if (regionLoad == null) {
       LOG.info(hri.getRegionNameAsString() + " was not found in RegionsLoad");
