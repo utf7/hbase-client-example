@@ -56,16 +56,26 @@ public class RegionTool {
         HRegionInfo first = regionInfos.get(i);
         HRegionInfo second = regionInfos.get(i + 1);
 
+        int successMergeCount = 0;
+        int failedMergeCount = 0;
+
         if (regionLoadMap.get(first.getRegionName()).getStorefileSizeMB() < sizeMb
             && regionLoadMap.get(second.getRegionName()).getStorefileSizeMB() < sizeMb) {
           if (HRegionInfo.areAdjacent(first, second)) {
             LOG.info("merge region : {}:{}Mb with {}:{}Mb ", first.getRegionNameAsString(),
                 getRegionSize(regionLoadMap, first), second.getRegionNameAsString(),
                 getRegionSize(regionLoadMap, second));
-            admin.mergeRegions(first.getEncodedNameAsBytes(), second.getEncodedNameAsBytes(),
-                false);
+            try {
+              admin.mergeRegions(first.getEncodedNameAsBytes(), second.getEncodedNameAsBytes(),
+                  false);
+              successMergeCount++;
+            } catch (Exception e) {
+              failedMergeCount++;
+            }
           }
         }
+        LOG.info("success merge region {} ,failed merge regions {}", successMergeCount,
+            failedMergeCount);
       }
     }
 
