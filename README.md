@@ -50,13 +50,13 @@ a simple hbase-site.xml client config like
   
  ```
 
-####  Run jar
+####  Run fat-jar
 
 
 if your  `hbase-site.xml`  in the folder `/home/conf/`  
 
 ```shell script
-java -cp /home/conf/:hbase-client-example-1.0 github.com.utf7.hbase.client.example.HBaseDemo 100 
+java -cp /home/conf/:hbase-client-example-1.0.jar github.com.utf7.hbase.client.example.HBaseDemo 100 
 ```
 
 `100` means write `100` rows data to hbase
@@ -64,6 +64,9 @@ java -cp /home/conf/:hbase-client-example-1.0 github.com.utf7.hbase.client.examp
 #### Region Tool
 
 **merge region**
+
+thin jar mode 
+
 ```shell script
 	 java -cp "original-hbase-client-example.jar:/usr/local/hbase/lib/*:/usr/local/hbase/conf/" github.com.utf7.hbase.tool.RegionTool "default:test_to_merge_tb" 1024
 ```
