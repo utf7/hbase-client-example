@@ -154,6 +154,69 @@ public class RegionTool {
 
   }
 
+  /**
+   * merge region when region size less than sizeMb
+   *
+   * @param connection
+   * @param tableName
+   * @throws IOException
+   */
+  public int scan(Connection connection, String tableName, byte[] startKey, int limit)
+      throws IOException {
+    int rowCount = 0;
+
+    long start = System.currentTimeMillis();
+    try (Table table = connection.getTable(TableName.valueOf(tableName));
+        ResultScanner rs = table.getScanner(new Scan().withStartRow(startKey).setLimit(limit))) {
+      for (Result r = rs.next(); r != null; r = rs.next()) {
+        rowCount++;
+        for (Cell kv : r.rawCells()) {
+          //
+        }
+      }
+      long cost = System.currentTimeMillis() - start;
+      LOG.info("scan table {}  with startKey {} with limit {},result rowCount {} and cost {} ms ",
+          tableName, Bytes.toString(startKey), limit, rowCount, cost);
+    }
+
+    return rowCount;
+
+  }
+
+  /**
+   * @param connection
+   * @param tableName
+   * @param threads
+   * @param totals
+   * @throws IOException
+   * @throws ExecutionException
+   * @throws InterruptedException
+   */
+  public void pscan(Connection connection, String tableName, int threads, int totals) {
+    try {
+      long start = System.currentTimeMillis();
+      ExecutorService es = Executors.newFixedThreadPool(threads);
+      List<HRegionInfo> regionInfos = connection.getAdmin().getTableRegions(TableName.valueOf(tableName));
+      List<Future<Integer>> futures = new ArrayList<>();
+      int limit = totals / threads  ;
+
+      for (HRegionInfo regionInfo : regionInfos) {
+        Future<Integer> result =
+            es.submit(() -> scan(connection, tableName, regionInfo.getStartKey(), limit));
+        futures.add(result);
+      }
+      AtomicInteger count = new AtomicInteger(0);
+      for (Future<Integer> f : futures) {
+        count.addAndGet(f.get());
+      }
+      LOG.info("finish scan table {}  threads:{} totals:{},resultCount:{}  cost {} ms,", tableName,
+          threads, totals, count, System.currentTimeMillis() - start);
+    }catch (Exception e){
+      LOG.error("concurrent scan error ",e);
+    }
+
+  }
+
   public void split(Admin admin, String tableName, int sizeMb) throws IOException {
     List<HRegionInfo> regionInfos = admin.getTableRegions(TableName.valueOf(tableName));
     Map<byte[], RegionLoad> regionLoadMap = getRegionsLoad(admin);
@@ -192,11 +255,17 @@ public class RegionTool {
         case "merge":
           int mergeLimitMb = Integer.parseInt(args[2]);
           regionTool.merge(admin, tableName, mergeLimitMb);
-          break;
         case "split":
           int splitLimitMb = Integer.parseInt(args[2]);
           regionTool.split(admin, tableName, splitLimitMb);
-          break;
+        case "scan":
+          byte[] startkey = args[2].getBytes(StandardCharsets.UTF_8);
+          int limit = Integer.parseInt(args[3]);
+          regionTool.scan(connection, tableName, startkey, limit);
+        case "pscan":
+          int threads = Integer.parseInt(args[2]);
+          int total = Integer.parseInt(args[3]);
+          regionTool.pscan(connection, tableName, threads, total);
         default:
           LOG.info("help====");
       }
