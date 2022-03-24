@@ -50,39 +50,59 @@ public class RegionTool {
   private void merge(Connection connection, TableName tableName, int sizeMb) throws IOException {
 
     try (Admin admin = connection.getAdmin()) {
-      Map<byte[], RegionMetrics> regionLoadMap = getRegionsLoad(admin);
+      LOG.info("starting merge table {} regions", tableName.getNameWithNamespaceInclAsString());
 
+      Map<byte[], RegionMetrics> regionLoadMap = getRegionsLoad(admin);
       List<RegionInfo> regionInfos = admin.getRegions(tableName);
+
+      int successMergeCount = 0;
+      int failedMergeCount = 0;
+
       for (int i = 0; i < regionInfos.size() - 1; i++) {
         RegionInfo first = regionInfos.get(i);
         RegionInfo second = regionInfos.get(i + 1);
-
-        if (regionLoadMap.get(first.getRegionName()).getStoreFileSize().get(Size.Unit.MEGABYTE) < sizeMb
-            && regionLoadMap.get(second.getRegionName()).getStoreFileSize().get(Size.Unit.MEGABYTE) < sizeMb) {
+        double firstRegionSizeMb = getRegionSizeMb(regionLoadMap, first);
+        double secondRegionSizeMb = getRegionSizeMb(regionLoadMap, second);
+        if (regionLoadMap.get(first.getRegionName()).getStoreFileSize().get(Size.Unit.MEGABYTE)
+            < sizeMb
+            && regionLoadMap.get(second.getRegionName()).getStoreFileSize().get(Size.Unit.MEGABYTE)
+            < sizeMb) {
           if (RegionInfo.areAdjacent(first, second)) {
-            LOG.info("merge region : {}:{}Mb with {}:{}Mb ", first.getRegionNameAsString(),
-                getRegionSize(regionLoadMap, first), second.getRegionNameAsString(),
-                getRegionSize(regionLoadMap, second));
+            LOG.info("starting merge region : {}:{}Mb with {}:{}Mb, after: {} Mb ",
+                first.getRegionNameAsString(), firstRegionSizeMb, second.getRegionNameAsString(),
+                secondRegionSizeMb, firstRegionSizeMb + secondRegionSizeMb);
             byte[][] nameofRegionsToMerge = new byte[2][];
             nameofRegionsToMerge[0] = first.getEncodedNameAsBytes();
             nameofRegionsToMerge[1] = second.getEncodedNameAsBytes();
-            admin.mergeRegionsAsync(nameofRegionsToMerge,
-                false);
+            try {
+              admin.mergeRegionsAsync(nameofRegionsToMerge, false);
+              LOG.info("finish merge region : {}:{}Mb with {}:{}Mb  after {} Mb",
+                  first.getRegionNameAsString(), firstRegionSizeMb, second.getRegionNameAsString(),
+                  secondRegionSizeMb, firstRegionSizeMb + secondRegionSizeMb);
+              successMergeCount++;
+            } catch (Exception e) {
+              LOG.error("merge region failed {},{} error:", first.getRegionNameAsString(),
+                  second.getRegionNameAsString(), e);
+              failedMergeCount++;
+            }
           }
         }
       }
+      LOG.info("success merge pair regions  {} ,failed merge pair regions {}", successMergeCount,
+          failedMergeCount);
     }
 
   }
 
   private Map<byte[], RegionMetrics> getRegionsLoad(Admin admin) throws IOException {
     Map<byte[], RegionMetrics> regionLoads = new TreeMap<>(Bytes.BYTES_COMPARATOR);
-    Map<ServerName, ServerMetrics> liveServerMetrics = admin.getClusterMetrics().getLiveServerMetrics();
+    Map<ServerName, ServerMetrics> liveServerMetrics =
+        admin.getClusterMetrics().getLiveServerMetrics();
     liveServerMetrics.values().forEach(s -> regionLoads.putAll(s.getRegionMetrics()));
     return regionLoads;
   }
 
-  private static double getRegionSize(Map<byte[], RegionMetrics> regionLoadMap, RegionInfo hri) {
+  private static double getRegionSizeMb(Map<byte[], RegionMetrics> regionLoadMap, RegionInfo hri) {
     RegionMetrics regionLoad = regionLoadMap.get(hri.getRegionName());
     if (regionLoad == null) {
       LOG.info(hri.getRegionNameAsString() + " was not found in RegionsLoad");
