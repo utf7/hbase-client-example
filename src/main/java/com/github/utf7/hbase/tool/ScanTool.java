@@ -18,13 +18,9 @@
 package com.github.utf7.hbase.tool;
 
 import com.github.utf7.hbase.client.example.HbaseConnectionFactory;
-import com.github.utf7.hbase.client.example.util.DataUtil;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.HRegionInfo;
-import org.apache.hadoop.hbase.RegionLoad;
-import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
@@ -37,12 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.TreeMap;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -57,102 +48,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Yechao Chen
  */
-public class RegionTool {
+public class ScanTool {
 
-  private final static Logger LOG = LoggerFactory.getLogger(RegionTool.class);
-
-  private void merge(Admin admin, TableName tableName, int sizeMb) throws IOException {
-
-    Map<byte[], RegionLoad> regionLoadMap = getRegionsLoad(admin);
-
-    List<HRegionInfo> regionInfos = admin.getTableRegions(tableName);
-    int successMergeCount = 0;
-    int failedMergeCount = 0;
-    LOG.info("starting merge table {} regions", tableName.getNameWithNamespaceInclAsString());
-    for (int i = 0; i < regionInfos.size() - 1; i++) {
-      HRegionInfo first = regionInfos.get(i);
-      HRegionInfo second = regionInfos.get(i + 1);
-      if (regionLoadMap.get(first.getRegionName()).getStorefileSizeMB() < sizeMb
-          && regionLoadMap.get(second.getRegionName()).getStorefileSizeMB() < sizeMb) {
-        if (HRegionInfo.areAdjacent(first, second)) {
-          long firstRegionSizeMb = getRegionSizeMb(regionLoadMap, first);
-          long secondRegionSizeMb = getRegionSizeMb(regionLoadMap, second);
-          long afterMergeRegionSzieMb = firstRegionSizeMb + secondRegionSizeMb;
-          LOG.info("starting merge region : {}:{}Mb with {}:{}Mb  after {} Mb",
-              first.getRegionNameAsString(), firstRegionSizeMb, second.getRegionNameAsString(),
-              secondRegionSizeMb, afterMergeRegionSzieMb);
-
-          try {
-            admin.mergeRegions(first.getEncodedNameAsBytes(), second.getEncodedNameAsBytes(),
-                false);
-            LOG.info("finish merge region : {}:{}Mb with {}:{}Mb  after {} Mb",
-                first.getRegionNameAsString(), firstRegionSizeMb, second.getRegionNameAsString(),
-                secondRegionSizeMb, afterMergeRegionSzieMb);
-
-            successMergeCount++;
-          } catch (Exception e) {
-            LOG.error("merge region failed {},{} error:", first.getRegionNameAsString(),
-                second.getRegionNameAsString(), e);
-            failedMergeCount++;
-          }
-        }
-      }
-    }
-    LOG.info("success merge region {} ,failed merge regions {}", successMergeCount,
-        failedMergeCount);
-
-  }
-
-  private Map<byte[], RegionLoad> getRegionsLoad(Admin admin) throws IOException {
-    Map<byte[], RegionLoad> regionLoads = new TreeMap<>(Bytes.BYTES_COMPARATOR);
-    Collection<ServerName> serverNames = admin.getClusterStatus().getServers();
-    for (ServerName sn : serverNames) {
-      Map<byte[], RegionLoad> regionLoadMap = admin.getClusterStatus().getLoad(sn).getRegionsLoad();
-      regionLoads.putAll(regionLoadMap);
-    }
-    return regionLoads;
-  }
-
-  /**
-   * @param regionLoadMap
-   * @param hri
-   * @return region size with MB
-   */
-  private static long getRegionSizeMb(Map<byte[], RegionLoad> regionLoadMap, HRegionInfo hri) {
-    RegionLoad regionLoad = regionLoadMap.get(hri.getRegionName());
-    if (regionLoad == null) {
-      LOG.info(hri.getRegionNameAsString() + " was not found in RegionsLoad");
-      return -1;
-    }
-    return regionLoad.getStorefileSizeMB();
-  }
-
-  /**
-   * @param hri
-   * @return region size with MB
-   */
-  private long getRegionSizeMb(Admin admin, HRegionInfo hri) throws IOException {
-    Map<byte[], RegionLoad> regionLoadMap = getRegionsLoad(admin);
-    RegionLoad regionLoad = regionLoadMap.get(hri.getRegionName());
-    if (regionLoad == null) {
-      LOG.info(hri.getRegionNameAsString() + " was not found in RegionsLoad");
-      return -1;
-    }
-    return regionLoad.getStorefileSizeMB();
-  }
-
-  /**
-   * merge region when region size less than sizeMb
-   *
-   * @param admin
-   * @param tableName
-   * @param sizeMb
-   * @throws IOException
-   */
-  public void merge(Admin admin, String tableName, int sizeMb) throws IOException {
-    merge(admin, TableName.valueOf(tableName), sizeMb);
-
-  }
+  private final static Logger LOG = LoggerFactory.getLogger(ScanTool.class);
 
   /**
    * merge region when region size less than sizeMb
@@ -171,7 +69,7 @@ public class RegionTool {
       for (Result r = rs.next(); r != null; r = rs.next()) {
         rowCount++;
         for (Cell kv : r.rawCells()) {
-          //
+          //ignore
         }
       }
       long cost = System.currentTimeMillis() - start;
@@ -187,18 +85,21 @@ public class RegionTool {
    * @param connection
    * @param tableName
    * @param threads
-   * @param totals
+   * @param total
    * @throws IOException
    * @throws ExecutionException
    * @throws InterruptedException
    */
-  public void pscan(Connection connection, String tableName, int threads, int totals) {
+  public void pscan(Connection connection, String tableName, int threads, int total) {
     try {
       long start = System.currentTimeMillis();
       ExecutorService es = Executors.newFixedThreadPool(threads);
-      List<HRegionInfo> regionInfos = connection.getAdmin().getTableRegions(TableName.valueOf(tableName));
+      List<HRegionInfo> regionInfos =
+          connection.getAdmin().getTableRegions(TableName.valueOf(tableName));
+      int regions = regionInfos.size();
+      threads = regions > threads ? regions : threads;
       List<Future<Integer>> futures = new ArrayList<>();
-      int limit = totals / threads  ;
+      int limit = total / threads;
 
       for (HRegionInfo regionInfo : regionInfos) {
         Future<Integer> result =
@@ -210,54 +111,19 @@ public class RegionTool {
         count.addAndGet(f.get());
       }
       LOG.info("finish scan table {}  threads:{} totals:{},resultCount:{}  cost {} ms,", tableName,
-          threads, totals, count, System.currentTimeMillis() - start);
-    }catch (Exception e){
-      LOG.error("concurrent scan error ",e);
+          threads, total, count, System.currentTimeMillis() - start);
+    } catch (Exception e) {
+      LOG.error("concurrent scan error ", e);
     }
-
-  }
-
-  public void split(Admin admin, String tableName, int sizeMb) throws IOException {
-    List<HRegionInfo> regionInfos = admin.getTableRegions(TableName.valueOf(tableName));
-    Map<byte[], RegionLoad> regionLoadMap = getRegionsLoad(admin);
-    LOG.info("starting split table {} regions with limit <= sizeMb {}", tableName, sizeMb);
-    int successSplitCount = 0;
-    int failedSplitCount = 0;
-    for (HRegionInfo hRegionInfo : regionInfos) {
-      long regionSize = getRegionSizeMb(regionLoadMap, hRegionInfo);
-      if (regionSize > sizeMb) {
-        try {
-          admin.split(TableName.valueOf(tableName));
-          successSplitCount++;
-          LOG.info("finish split {} region : {}:{}Mb", tableName,
-              hRegionInfo.getRegionNameAsString(), regionSize);
-
-        } catch (Exception e) {
-          failedSplitCount++;
-          LOG.error("split table {},region : {} failed error:", tableName,
-              hRegionInfo.getRegionNameAsString(), e);
-        }
-      }
-    }
-
-    LOG.info("success split {} regions ,failed split {} regions", successSplitCount,
-        failedSplitCount);
 
   }
 
   public static void main(String[] args) {
     String type = args[0];
-    try (Connection connection = HbaseConnectionFactory.getConnection();
-        Admin admin = connection.getAdmin()) {
-      RegionTool regionTool = new RegionTool();
+    try (Connection connection = HbaseConnectionFactory.getConnection()) {
+      ScanTool regionTool = new ScanTool();
       String tableName = args[1];
       switch (type) {
-        case "merge":
-          int mergeLimitMb = Integer.parseInt(args[2]);
-          regionTool.merge(admin, tableName, mergeLimitMb);
-        case "split":
-          int splitLimitMb = Integer.parseInt(args[2]);
-          regionTool.split(admin, tableName, splitLimitMb);
         case "scan":
           byte[] startkey = args[2].getBytes(StandardCharsets.UTF_8);
           int limit = Integer.parseInt(args[3]);
@@ -267,7 +133,8 @@ public class RegionTool {
           int total = Integer.parseInt(args[3]);
           regionTool.pscan(connection, tableName, threads, total);
         default:
-          LOG.info("help====");
+          LOG.info(
+              "help：\n  1. 100 threads/total scan 300000rows , com.github.utf7.hbase.tool.ScanTool  \"pscan\" \"test 100 300000");
       }
 
     } catch (IOException e) {
