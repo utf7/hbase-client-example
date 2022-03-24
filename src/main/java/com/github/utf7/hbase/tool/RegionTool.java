@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package github.com.utf7.hbase.tool;
+package com.github.utf7.hbase.tool;
 
-import github.com.utf7.hbase.client.example.HbaseConnectionFactory;
+import com.github.utf7.hbase.client.example.HbaseConnectionFactory;
 import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.RegionLoad;
 import org.apache.hadoop.hbase.ServerName;
@@ -52,27 +52,28 @@ public class RegionTool {
       Map<byte[], RegionLoad> regionLoadMap = getRegionsLoad(admin);
 
       List<HRegionInfo> regionInfos = admin.getTableRegions(tableName);
+      int successMergeCount = 0;
+      int failedMergeCount = 0;
+      LOG.info("starting merge table {} regions",tableName.getNameWithNamespaceInclAsString());
       for (int i = 0; i < regionInfos.size() - 1; i++) {
         HRegionInfo first = regionInfos.get(i);
         HRegionInfo second = regionInfos.get(i + 1);
-
-        int successMergeCount = 0;
-        int failedMergeCount = 0;
-
         if (regionLoadMap.get(first.getRegionName()).getStorefileSizeMB() < sizeMb
             && regionLoadMap.get(second.getRegionName()).getStorefileSizeMB() < sizeMb) {
           if (HRegionInfo.areAdjacent(first, second)) {
             long firstRegionSizeMb = getRegionSizeMb(regionLoadMap, first);
             long secondRegionSizeMb = getRegionSizeMb(regionLoadMap, second);
             long afterMergeRegionSzieMb = firstRegionSizeMb + secondRegionSizeMb;
-            LOG.info("starting merge region : {}:{}Mb with {}:{}Mb  after {} Mb", first.getRegionNameAsString(),
-                firstRegionSizeMb, second.getRegionNameAsString(), secondRegionSizeMb,afterMergeRegionSzieMb);
+            LOG.info("starting merge region : {}:{}Mb with {}:{}Mb  after {} Mb",
+                first.getRegionNameAsString(), firstRegionSizeMb, second.getRegionNameAsString(),
+                secondRegionSizeMb, afterMergeRegionSzieMb);
 
             try {
               admin.mergeRegions(first.getEncodedNameAsBytes(), second.getEncodedNameAsBytes(),
                   false);
-              LOG.info("finish merge region : {}:{}Mb with {}:{}Mb  after {} Mb", first.getRegionNameAsString(),
-                  firstRegionSizeMb, second.getRegionNameAsString(), secondRegionSizeMb,afterMergeRegionSzieMb);
+              LOG.info("finish merge region : {}:{}Mb with {}:{}Mb  after {} Mb",
+                  first.getRegionNameAsString(), firstRegionSizeMb, second.getRegionNameAsString(),
+                  secondRegionSizeMb, afterMergeRegionSzieMb);
 
               successMergeCount++;
             } catch (Exception e) {
@@ -82,9 +83,9 @@ public class RegionTool {
             }
           }
         }
-        LOG.info("success merge region {} ,failed merge regions {}", successMergeCount,
-            failedMergeCount);
       }
+      LOG.info("success merge region {} ,failed merge regions {}", successMergeCount,
+          failedMergeCount);
     }
 
   }
@@ -113,8 +114,19 @@ public class RegionTool {
     return regionLoad.getStorefileSizeMB();
   }
 
+  /**
+   * merge region when region size less than sizeMb
+   * @param connection
+   * @param tableName
+   * @param sizeMb
+   * @throws IOException
+   */
   public void merge(Connection connection, String tableName, int sizeMb) throws IOException {
     merge(connection, TableName.valueOf(tableName), sizeMb);
+
+  }
+
+  public void split(Connection connection,String tableName,int sizeMb){
 
   }
 

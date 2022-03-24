@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package github.com.utf7.hbase.client.example.util;
+package com.github.utf7.hbase.client.example.util;
 
 import org.apache.commons.lang.math.RandomUtils;
 import org.apache.hadoop.hbase.Cell;
