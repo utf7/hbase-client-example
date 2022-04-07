@@ -80,3 +80,9 @@ Bytes.toString(regionInfo.getEncodedNameAsBytes()):   adfbdd6411c6015c2b93ec0189
 getEncodedName : adfbdd6411c6015c2b93ec0189f7ec8d
 getRegionId : 1647862081929
 ```
+
+#### HBase Shell Create Table example
+
+```
+create 'test', {NAME => 'f1', VERSIONS => '1', COMPRESSION => 'GZ', DATA_BLOCK_ENCODING => 'FAST_DIFF',  CONFIGURATION => {'hbase.hstore.compaction.max' => '15','hbase.hstore.compaction.min' => '7','hbase.hregion.max.filesize' => '21474836480', 'hbase.hregion.majorcompaction' => '0'}},{NUMREGIONS => 30,SPLITALGO => 'DecimalStringSplit'}
+```
