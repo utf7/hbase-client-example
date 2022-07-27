@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.utf7.tool;
+package com.github.utf7.hbase.tool;
 
 import com.github.utf7.hbase.client.example.HbaseConnectionFactory;
 import org.apache.hadoop.hbase.RegionMetrics;
